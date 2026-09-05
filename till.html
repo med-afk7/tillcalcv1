@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Till Drop Calculator</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111827;
+      color: white;
+      margin: 0;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #9ca3af;
+      margin-bottom: 24px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .denomination {
+      background: #1f2937;
+      padding: 12px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    input {
+      width: 90px;
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #4b5563;
+      background: #111827;
+      color: white;
+      text-align: right;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .card {
+      background: #1f2937;
+      padding: 16px;
+      border-radius: 10px;
+    }
+
+    .card small {
+      color: #9ca3af;
+    }
+
+    .card strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 22px;
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .result-box {
+      background: #1f2937;
+      padding: 16px;
+      border-radius: 10px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px;
+      margin-top: 6px;
+      background: #111827;
+      border-radius: 6px;
+    }
+
+    #message {
+      margin-top: 16px;
+      color: #fbbf24;
+    }
+
+    @media (max-width: 600px) {
+      .grid,
+      .summary,
+      .results {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>Till Drop Calculator</h1>
+
+  <div class="subtitle">
+    Enter how many bills and coins you have.
+    The calculator will leave exactly $100 in the till.
+  </div>
+
+  <div id="denominations" class="grid"></div>
+
+  <button id="calculate">
+    Calculate Drop
+  </button>
+
+  <div class="summary">
+
+    <div class="card">
+      <small>Till Total</small>
+      <strong id="total">$0.00</strong>
+    </div>
+
+    <div class="card">
+      <small>Amount To Drop</small>
+      <strong id="dropTotal">$0.00</strong>
+    </div>
+
+    <div class="card">
+      <small>Remaining</small>
+      <strong id="remainingTotal">$0.00</strong>
+    </div>
+
+  </div>
+
+  <div class="results">
+
+    <div class="result-box">
+      <h2>Drop</h2>
+      <div id="dropList">
+        Nothing calculated yet.
+      </div>
+    </div>
+
+    <div class="result-box">
+      <h2>Remaining In Till</h2>
+      <div id="remainingList">
+        Nothing calculated yet.
+      </div>
+    </div>
+
+  </div>
+
+  <div id="message"></div>
+
+</div>
+
+
+<script>
+
+const denominations = [
+
+  { name: "$100", cents: 10000 },
+
+  { name: "$50", cents: 5000 },
+
+  { name: "$20", cents: 2000 },
+
+  { name: "$10", cents: 1000 },
+
+  { name: "$5", cents: 500 },
+
+  { name: "$2", cents: 200 },
+
+  { name: "$1", cents: 100 },
+
+  { name: "$0.25", cents: 25 },
+
+  { name: "$0.10", cents: 10 },
+
+  { name: "$0.05", cents: 5 }
+
+];
+
+
+const denominationContainer =
+  document.getElementById("denominations");
+
+
+/*
+Create the input boxes
+*/
+
+denominations.forEach((denomination, index) => {
+
+  const row = document.createElement("div");
+
+  row.className = "denomination";
+
+
+  const label = document.createElement("label");
+
+  label.textContent = denomination.name;
+
+
+  const input = document.createElement("input");
+
+  input.type = "number";
+
+  input.min = "0";
+
+  input.placeholder = "0";
+
+  input.dataset.index = index;
+
+
+  row.appendChild(label);
+
+  row.appendChild(input);
+
+  denominationContainer.appendChild(row);
+
+});
+
+
+function money(cents) {
+
+  return "$" + (cents / 100).toFixed(2);
+
+}
+
+
+function getCounts() {
+
+  const inputs =
+    document.querySelectorAll(".denomination input");
+
+
+  return [...inputs].map(input => {
+
+    const number =
+      parseInt(input.value);
+
+
+    if (isNaN(number) || number < 0) {
+
+      return 0;
+
+    }
+
+
+    return number;
+
+  });
+
+}
+
+
+function getTotal(counts) {
+
+  let total = 0;
+
+
+  counts.forEach((count, index) => {
+
+    total +=
+      count *
+      denominations[index].cents;
+
+  });
+
+
+  return total;
+
+}
+
+
+/*
+Find the exact combination to drop.
+
+Important:
+
+We start with the largest denomination.
+
+That means the calculator tries to
+drop $100 bills first,
+then $50,
+then $20,
+etc.
+
+If using a large bill prevents us
+from reaching the exact drop amount,
+the algorithm backs up and tries
+another combination.
+*/
+
+function findDrop(counts, amountToDrop) {
+
+  const memo = new Map();
+
+
+  function search(index, remaining) {
+
+    /*
+    We reached the exact amount.
+    */
+
+    if (remaining === 0) {
+
+      return [];
+
+    }
+
+
+    /*
+    Ran out of denominations.
+    */
+
+    if (index >= denominations.length) {
+
+      return null;
+
+    }
+
+
+    const key =
+      index + "-" + remaining;
+
+
+    if (memo.has(key)) {
+
+      return memo.get(key);
+
+    }
+
+
+    const denomination =
+      denominations[index].cents;
+
+
+    /*
+    Maximum number of this bill/coin
+    we are allowed to use.
+    */
+
+    const maxPossible =
+      Math.min(
+        counts[index],
+        Math.floor(
+          remaining /
+          denomination
+        )
+      );
+
+
+    /*
+    Start at the maximum.
+
+    This is what gives HIGHER
+    denominations priority.
+    */
+
+    for (
+      let amount = maxPossible;
+      amount >= 0;
+      amount--
+    ) {
+
+      const newRemaining =
+        remaining -
+        amount *
+        denomination;
+
+
+      const result =
+        search(
+          index + 1,
+          newRemaining
+        );
+
+
+      if (result !== null) {
+
+        const solution =
+          [amount, ...result];
+
+
+        memo.set(
+          key,
+          solution
+        );
+
+
+        return solution;
+
+      }
+
+    }
+
+
+    memo.set(
+      key,
+      null
+    );
+
+
+    return null;
+
+  }
+
+
+  return search(
+    0,
+    amountToDrop
+  );
+
+}
+
+
+function displayList(
+  element,
+  counts
+) {
+
+  element.innerHTML = "";
+
+
+  let found = false;
+
+
+  counts.forEach(
+    (count, index) => {
+
+      if (count === 0) {
+
+        return;
+
+      }
+
+
+      found = true;
+
+
+      const row =
+        document.createElement("div");
+
+
+      row.className = "row";
+
+
+      const left =
+        document.createElement("span");
+
+
+      left.textContent =
+        denominations[index].name +
+        " × " +
+        count;
+
+
+      const right =
+        document.createElement("span");
+
+
+      right.textContent =
+        money(
+          denominations[index].cents *
+          count
+        );
+
+
+      row.appendChild(left);
+
+      row.appendChild(right);
+
+
+      element.appendChild(row);
+
+    }
+  );
+
+
+  if (!found) {
+
+    element.textContent =
+      "None";
+
+  }
+
+}
+
+
+document
+  .getElementById("calculate")
+  .addEventListener(
+    "click",
+    () => {
+
+      const counts =
+        getCounts();
+
+
+      const total =
+        getTotal(counts);
+
+
+      const target =
+        10000;
+
+
+      const totalDisplay =
+        document.getElementById("total");
+
+
+      const dropDisplay =
+        document.getElementById("dropTotal");
+
+
+      const remainingDisplay =
+        document.getElementById("remainingTotal");
+
+
+      const dropList =
+        document.getElementById("dropList");
+
+
+      const remainingList =
+        document.getElementById("remainingList");
+
+
+      const message =
+        document.getElementById("message");
+
+
+      totalDisplay.textContent =
+        money(total);
+
+
+      /*
+      Till has less than $100.
+      */
+
+      if (total < target) {
+
+        dropDisplay.textContent =
+          "$0.00";
+
+
+        remainingDisplay.textContent =
+          money(total);
+
+
+        dropList.textContent =
+          "Nothing to drop.";
+
+
+        displayList(
+          remainingList,
+          counts
+        );
+
+
+        message.textContent =
+          "Till is below $100.";
+
+
+        return;
+
+      }
+
+
+      /*
+      Calculate how much must leave.
+      */
+
+      const amountToDrop =
+        total - target;
+
+
+      /*
+      Find exact bills/coins
+      to drop.
+      */
+
+      const drop =
+        findDrop(
+          counts,
+          amountToDrop
+        );
+
+
+      if (drop === null) {
+
+        message.textContent =
+          "Could not find an exact combination.";
+
+
+        return;
+
+      }
+
+
+      /*
+      Calculate what remains.
+      */
+
+      const remaining =
+        counts.map(
+          (count, index) =>
+
+            count -
+            drop[index]
+
+        );
+
+
+      dropDisplay.textContent =
+        money(amountToDrop);
+
+
+      remainingDisplay.textContent =
+        "$100.00";
+
+
+      displayList(
+        dropList,
+        drop
+      );
+
+
+      displayList(
+        remainingList,
+        remaining
+      );
+
+
+      if (amountToDrop === 0) {
+
+        message.textContent =
+          "Till is already exactly $100.";
+
+      }
+
+      else {
+
+        message.textContent =
+          "Drop " +
+          money(amountToDrop) +
+          ". Exactly $100 will remain.";
+
+      }
+
+    }
+  );
+
+</script>
+
+</body>
+</html>
